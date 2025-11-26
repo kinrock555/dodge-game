@@ -103,4 +103,3 @@ while True:
 
     # 画面更新
     pygame.display.flip()
-##test
