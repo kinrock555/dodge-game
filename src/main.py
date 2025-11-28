@@ -51,8 +51,8 @@ player_rect = pygame.Rect(
 )
 
 # --- 敵の設定 ---
-ENEMY_SIZE = 100
-enemy_speed = 10
+ENEMY_SIZE = 150
+enemy_speed = 13
 
 # 敵画像の読み込み
 enemy_image_path = ASSETS_DIR / "Enemy.png"
@@ -70,20 +70,35 @@ enemy_rect = pygame.Rect(
 # --- ゲーム状態 ---
 game_over = False
 
+# ★ 生存時間用の変数 ---
+#   start_time: ゲーム開始（またはリトライ）した瞬間の時刻（ミリ秒）
+#   survival_time: ゲームオーバーまでに生き残った秒数
+start_time = pygame.time.get_ticks()
+survival_time = 0.0
+
 
 def reset_game():
     """ゲームを初期状態に戻す"""
     global game_over, player_rect, enemy_rect, bg_y1, bg_y2
+    global start_time, survival_time
+
     game_over = False
+
     # プレイヤー初期位置
     player_rect.x = WIDTH // 2 - PLAYER_SIZE // 2
     player_rect.y = HEIGHT - PLAYER_SIZE - 20
+
     # 敵を上から再スタート
     enemy_rect.x = random.randint(0, WIDTH - ENEMY_SIZE)
     enemy_rect.y = -ENEMY_SIZE
+
     # 背景位置もリセット
     bg_y1 = 0
     bg_y2 = -HEIGHT
+
+    # ★ 生存時間のリセット＆開始時刻を記録
+    start_time = pygame.time.get_ticks()
+    survival_time = 0.0
 
 
 # === メインループ ===
@@ -137,7 +152,11 @@ while True:
 
         # 当たり判定
         if enemy_rect.colliderect(player_rect):
+            # ★ ゲームオーバーになった瞬間に生存時間を計算
             game_over = True
+            # ミリ秒 → 秒 に変換（小数点2桁くらい）
+            elapsed_ms = pygame.time.get_ticks() - start_time
+            survival_time = elapsed_ms / 1000.0
 
         # ★ 背景スクロール更新（プレイ中のみ）
         bg_y1 += BG_SCROLL_SPEED
@@ -155,11 +174,20 @@ while True:
         SCREEN.fill((50, 0, 0))
 
         text_gameover = FONT_BIG.render("GAME OVER", True, (255, 255, 255))
-        text_rect = text_gameover.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 40))
+        text_rect = text_gameover.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 60))
         SCREEN.blit(text_gameover, text_rect)
 
+        # ★ 生存時間の表示
+        # 例）"Survival Time: 8.32 sec"
+        time_text = FONT_SMALL.render(
+            f"Survival Time: {survival_time:.2f} sec", True, (255, 255, 0)
+        )
+        time_rect = time_text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+        SCREEN.blit(time_text, time_rect)
+
+        # 操作説明
         text_info = FONT_SMALL.render("Press R to Retry / ESC to Quit", True, (255, 255, 255))
-        info_rect = text_info.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 20))
+        info_rect = text_info.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 60))
         SCREEN.blit(text_info, info_rect)
 
     else:
